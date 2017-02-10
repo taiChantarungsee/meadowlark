@@ -8,7 +8,7 @@ app.engine('handlebars', handlebars.engine);
 app.set('view engine', 'handlebars');
 
 app.use(require('body-parser')());
-app.use(require('cookie-parser')(credentials.cookieSecret));
+app.use(require('cookie-parser'));
 app.use(require('express-session')());
 
 app.use(express.static(__dirname + '/public'));
@@ -19,6 +19,11 @@ app.use(function(req,res,next){
 });
 
 app.set('port', process.env.PORT || 3000)
+
+app.use(function(req,res,next){
+	var cluster = require('cluster');
+	if(cluster.isWorker) console.log('Worker %d received request', cluster.worker.id);
+});
 
 app.get('/', function(req, res) {
 res.render('home');
@@ -66,13 +71,32 @@ app.use(function(req,res) {
 });
 
 app.use(function(err, req, res, next){
-console.error(err.stack);
-res.type('text/plain');
-res.status(500);
-res.send('500 - Server Error');
+	console.error(err.stack);
+	res.type('text/plain');
+	res.status(500);
+	res.send('500 - Server Error');
 });
 
-app.listen(app.get('port'), function(){
-console.log( 'Express started on http://localhost:' +
-app.get('port') + '; press Ctrl-C to terminate.' );
-});
+// Wrapped in a function in order to enable appclusters
+function startServer() {
+		app.listen(app.get('port'), function(){
+		console.log( 'Express started on http://localhost:' +
+		app.get('port') + 'in environment ' + app.get('env') + '; press Ctrl-C to terminate.' );
+	});
+}
+
+if(require.main === module){
+	startServer();
+} else {
+	module.exports = startServer;
+}		
+
+switch(app.get('env')){
+	case 'development':
+		app.use(require('morgan')('dev'));
+		break;
+	case 'production':
+		app.use(require('express-logger')({
+			path: __dirname + '/log/requests.log'
+		}));
+}
