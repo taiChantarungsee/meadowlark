@@ -1,7 +1,8 @@
 var express = require('express');
 var app = express()
-var formidable = require('formidable');
 var dataDir = __dirname + '/date';
+var formidable = require('formidable');
+var https = require('https');
 var mongoose = require('mongoose');
 var rest = require('connect-rest');
 var vacation = require('./models/vacation.js');
@@ -15,6 +16,8 @@ app.set('view engine', 'handlebars');
 app.use(require('body-parser')());
 app.use(require('cookie-parser'));
 app.use(require('express-session')());
+//for api subdomain comment out if causing problems on development environments
+app.use(vhost('api.*', rest.rester(apiOptions));
 
 app.use(express.static(__dirname + '/public'));
 app.use(function(req,res,next){
@@ -153,7 +156,7 @@ rest.get('/attraction/:id', function(req, content, cb){
 
 //API Configuration
 var apiOptions = {
-	context: '/api',
+	context: '/',
 	domain: require('domain').create()
 };
 
@@ -184,9 +187,15 @@ app.use(function(err, req, res, next){
 	res.send('500 - Server Error');
 });
 
+//https options
+var options = {
+	key: fs.readFileSync(__dirname + '/meadowlark.pem');
+	cert: fs.readFileSync(__dirname + '/ssl/meadowlark.crt');
+};
+
 // Wrapped in a function in order to enable appclusters
 function startServer() {
-		app.listen(app.get('port'), function(){
+		https.createServer(options, app).listen(app.get('port'), function(){
 		console.log( 'Express started on http://localhost:' +
 		app.get('port') + 'in environment ' + app.get('env') + '; press Ctrl-C to terminate.' );
 	});
