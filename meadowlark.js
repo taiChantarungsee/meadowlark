@@ -13,6 +13,16 @@ var handlebars = require('express3-handlebars')
 app.engine('handlebars', handlebars.engine);
 app.set('view engine', 'handlebars');
 
+// set up handlebars view engine
+var handlebars = require('express3-handlebars').create({
+		defaultLayout:'main',
+		helpers: {
+			static: function(name) {
+			return require('./lib/static.js').map(name);
+		}
+	}
+});
+
 app.use(require('body-parser')());
 app.use(require('cookie-parser'));
 app.use(require('express-session')());
